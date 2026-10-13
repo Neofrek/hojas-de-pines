@@ -1,4 +1,6 @@
-"""Arma dist/pines.html: un solo archivo que funciona sin internet (jsPDF incluido).
+"""Arma docs/index.html: un solo archivo que funciona sin internet (jsPDF incluido).
+
+GitHub Pages publica la carpeta docs/.
 
 pines.html es la fuente y también la página que se publica en claude.ai
 (sin doctype/head/body: el publicador los agrega).
@@ -20,6 +22,6 @@ out = (
     '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n'
     + body + "\n</html>\n"
 )
-(here / "dist").mkdir(exist_ok=True)
-(here / "dist" / "pines.html").write_text(out, encoding="utf-8")
-print(f"dist/pines.html: {len(out.encode()) // 1024} KB")
+(here / "docs").mkdir(exist_ok=True)
+(here / "docs" / "index.html").write_text(out, encoding="utf-8")
+print(f"docs/index.html: {len(out.encode()) // 1024} KB")

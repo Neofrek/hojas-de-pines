@@ -1,0 +1,1006 @@
+<title>Hojas de Pines</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@800&family=Bebas+Neue&family=Fredoka:wght@500;600&family=Lobster&family=Nunito:wght@400;600;700&family=Pacifico&family=Permanent+Marker&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha512-qZvrmS2ekKPF2mSznTQsxqPgnpkI4DNTlrdUmTzrDgektczlKNRRhy5X5AAOnx5S09ydFYWWNSfcEqDTTHgtNA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<style>
+  /* Mesa de trabajo: controles a la izquierda, pines y hojas a la derecha. */
+  :root {
+    --bg: #f8f5f1;
+    --panel: #ffffff;
+    --field: #ffffff;
+    --ink: #2b2420;
+    --muted: #776a62;
+    --line: #e8dfd6;
+    --accent: #d23f66;
+    --accent-ink: #ffffff;
+    --soft: #fdebf0;
+    --soft-line: #e8b4c3;
+    --danger: #b3261e;
+    --shadow: rgba(40, 20, 10, .12);
+    --font-display: "Fredoka", "Nunito", system-ui, sans-serif;
+    --font-body: "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #1d1a19; --panel: #282423; --field: #322d2b; --ink: #f2ebe6; --muted: #b3a69d;
+      --line: #423a37; --accent: #f06a8c; --accent-ink: #1d1a19; --soft: #3a2a2f; --soft-line: #8a4c5e;
+      --danger: #ff8a80; --shadow: rgba(0, 0, 0, .45); color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #1d1a19; --panel: #282423; --field: #322d2b; --ink: #f2ebe6; --muted: #b3a69d;
+    --line: #423a37; --accent: #f06a8c; --accent-ink: #1d1a19; --soft: #3a2a2f; --soft-line: #8a4c5e;
+    --danger: #ff8a80; --shadow: rgba(0, 0, 0, .45); color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.45 var(--font-body);
+    padding-inline: 16px;
+  }
+  .wrap { max-width: 1240px; margin: 0 auto; padding-block: 20px 48px; }
+  header h1 { margin: 0; font: 600 28px/1.15 var(--font-display); text-wrap: balance; }
+  header p { margin: 4px 0 0; color: var(--muted); }
+  main {
+    display: grid; grid-template-columns: 360px minmax(0, 1fr); gap: 20px;
+    margin-top: 18px; align-items: start;
+  }
+  @media (max-width: 900px) { main { grid-template-columns: minmax(0, 1fr); } }
+  main > section { display: grid; gap: 16px; min-width: 0; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px; min-width: 0; }
+  .panel h2 { margin: 0 0 12px; font: 600 17px/1.2 var(--font-display); }
+  .drop {
+    border: 2px dashed var(--soft-line); border-radius: 12px; padding: 22px 12px;
+    text-align: center; background: var(--soft); cursor: pointer; width: 100%; color: var(--ink);
+  }
+  .drop.over { border-color: var(--accent); }
+  .drop strong { color: var(--accent); display: block; font-size: 16px; }
+  .drop small { display: block; color: var(--muted); margin-top: 4px; }
+  .row-btns { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .row-btns button { flex: 1 1 140px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; }
+  @media (max-width: 420px) { .grid2 { grid-template-columns: 1fr; } }
+  label { display: block; font-size: 13px; color: var(--muted); }
+  input, select, textarea { font: inherit; color: var(--ink); }
+  label > input:not([type=checkbox]):not([type=color]), label > select {
+    display: block; width: 100%; margin-top: 3px; padding: 7px 8px;
+    border: 1px solid var(--line); border-radius: 8px; background: var(--field);
+  }
+  .check { display: flex; gap: 8px; align-items: center; color: var(--ink); font-size: 14px; margin-top: 10px; }
+  .check input { margin: 0; }
+  .field-note { grid-column: 1 / -1; font-size: 12px; color: var(--muted); margin: -4px 0 0; }
+  button {
+    font: inherit; font-weight: 600; border-radius: 10px; border: 1px solid var(--line);
+    background: var(--field); padding: 8px 12px; cursor: pointer; color: var(--ink);
+  }
+  button:hover:not(:disabled) { border-color: var(--soft-line); }
+  button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  button.primary {
+    background: var(--accent); border-color: var(--accent); color: var(--accent-ink);
+    width: 100%; padding: 12px; font-size: 16px;
+  }
+  button.danger { color: var(--danger); }
+  button:disabled { opacity: .5; cursor: default; }
+  .stats { margin: 0 0 12px; font-size: 14px; font-variant-numeric: tabular-nums; }
+  .stats b { color: var(--accent); }
+  .stats .sub { color: var(--muted); }
+  #fillBtn { width: 100%; margin-bottom: 10px; }
+  .note { font-size: 13px; color: var(--muted); margin: 10px 0 0; }
+  .warn { color: var(--danger); font-size: 13px; margin-top: 8px; }
+  .toolbar { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+  .toolbar h2 { margin: 0; }
+  .items { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+  .item { border: 1px solid var(--line); border-radius: 12px; padding: 10px; display: grid; gap: 6px; text-align: center; min-width: 0; }
+  .item canvas { width: 120px; height: 120px; max-width: 100%; cursor: pointer; display: block; margin: 0 auto; border-radius: 50%; }
+  .item .name { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .item .edit { padding: 5px; font-size: 13px; }
+  .item .row { display: flex; gap: 6px; align-items: center; justify-content: space-between; }
+  .item .row label { display: flex; gap: 4px; align-items: center; color: var(--ink); font-size: 13px; }
+  .item .row input { width: 56px; padding: 4px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--field); }
+  .item .row button { padding: 4px 8px; font-size: 13px; }
+  .empty { color: var(--muted); text-align: center; padding: 24px 8px; }
+  .pages { display: flex; flex-wrap: wrap; gap: 18px; }
+  .page { text-align: center; font-size: 13px; color: var(--muted); }
+  .page canvas { display: block; width: 260px; max-width: 100%; height: auto; background: #fff; box-shadow: 0 2px 10px var(--shadow); margin-bottom: 6px; }
+
+  dialog#editor {
+    border: 1px solid var(--line); border-radius: 16px; padding: 18px; width: min(540px, calc(100vw - 24px));
+    max-height: calc(100vh - 24px); overflow: auto;
+    box-shadow: 0 10px 40px var(--shadow); color: var(--ink); background: var(--panel);
+  }
+  dialog#editor::backdrop { background: rgba(30, 20, 15, .5); }
+  #editor h2 { margin: 0 0 4px; font: 600 18px/1.2 var(--font-display); }
+  #editor .hint { margin: 0 0 10px; font-size: 13px; color: var(--muted); }
+  #edCanvas { width: 100%; max-width: 100%; aspect-ratio: 1; display: block; border-radius: 12px; touch-action: none; cursor: grab; }
+  #edCanvas:active { cursor: grabbing; }
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .legend i { display: inline-block; width: 18px; border-top: 3px dashed; vertical-align: middle; margin-right: 4px; }
+  .ctl { display: grid; grid-template-columns: 76px minmax(0, 1fr) 52px; gap: 8px; align-items: center; margin-top: 10px; font-size: 14px; }
+  .ctl input[type=range] { width: 100%; }
+  .ctl output { text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .btns { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; align-items: center; }
+  .btns button { padding: 6px 10px; font-size: 13px; }
+  .btns label { display: flex; align-items: center; gap: 6px; color: var(--ink); font-size: 13px; }
+  input[type=color] { width: 36px; height: 30px; padding: 0 2px; border: 1px solid var(--line); border-radius: 8px; background: var(--field); }
+  details.text { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 10px; }
+  details.text summary { cursor: pointer; font: 600 15px var(--font-display); }
+  .text-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; margin-top: 10px; }
+  .text-grid .full { grid-column: 1 / -1; }
+  .ed-foot { display: flex; justify-content: space-between; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+  .ed-foot span { display: flex; gap: 8px; }
+  .ed-foot .primary { width: auto; padding: 9px 22px; font-size: 15px; }
+
+  #toast {
+    position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
+    background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 10px;
+    font-size: 14px; max-width: calc(100vw - 32px); box-shadow: 0 4px 18px var(--shadow); z-index: 10;
+  }
+  @media (prefers-reduced-motion: no-preference) { #toast { transition: opacity .2s; } }
+</style>
+
+<div class="wrap">
+<header>
+  <h1>Hojas de Pines</h1>
+  <p>Agrega tus imágenes, acomódalas en el círculo y descarga el PDF listo para imprimir.</p>
+</header>
+
+<main>
+  <section>
+    <div class="panel">
+      <h2>1. Imágenes</h2>
+      <button type="button" class="drop" id="drop">
+        <strong>Elegir imágenes</strong>
+        <small>o arrástralas aquí · también puedes pegar (Ctrl/Cmd + V)</small>
+      </button>
+      <input type="file" id="file" accept="image/*" multiple hidden>
+      <div class="row-btns">
+        <button type="button" id="exportBtn" disabled>Guardar proyecto</button>
+        <button type="button" id="importBtn">Abrir proyecto</button>
+      </div>
+      <input type="file" id="importFile" accept=".json,application/json" hidden>
+      <p class="note" id="autosaveNote">Tu trabajo se guarda solo en este navegador. “Guardar proyecto” crea un archivo para pasarlo a otra computadora.</p>
+    </div>
+
+    <div class="panel">
+      <h2>2. Hoja</h2>
+      <div class="grid2">
+        <label>Tamaño de hoja
+          <select id="paper">
+            <option value="carta" selected>Carta (21.6 × 27.9 cm)</option>
+            <option value="oficio">Oficio México (21.6 × 34 cm)</option>
+            <option value="legal">Legal / Oficio US (21.6 × 35.6 cm)</option>
+            <option value="a4">A4 (21 × 29.7 cm)</option>
+          </select>
+        </label>
+        <label>Círculo de corte (mm)
+          <input type="number" id="diameter" value="59" min="10" max="200" step="0.5">
+        </label>
+        <label>Cara visible del pin (mm)
+          <input type="number" id="face" value="48" min="5" max="200" step="0.5">
+        </label>
+        <label>Calidad
+          <select id="dpi">
+            <option value="300" selected>Alta (300 dpi)</option>
+            <option value="600">Máxima (600 dpi)</option>
+          </select>
+        </label>
+        <p class="field-note">Cara visible: mide el frente de un pin ya terminado. Lo que quede fuera se dobla hacia el costado.</p>
+        <label>Margen de la hoja (mm)
+          <input type="number" id="margin" value="8" min="0" max="40" step="0.5">
+        </label>
+        <label>Separación (mm)
+          <input type="number" id="gap" value="6" min="0" max="40" step="0.5">
+        </label>
+      </div>
+      <label class="check"><input type="checkbox" id="outline" checked> Dibujar línea de corte</label>
+      <div class="warn" id="warn" hidden></div>
+    </div>
+
+    <div class="panel">
+      <h2>3. Descargar</h2>
+      <p class="stats" id="stats">Agrega imágenes para empezar.</p>
+      <button type="button" id="fillBtn" hidden></button>
+      <button type="button" class="primary" id="download" disabled>Descargar PDF</button>
+      <p class="note">Al imprimir, elige <b>“Tamaño real” / 100 %</b>, no “Ajustar a la página”, para que los círculos midan exactamente lo indicado.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="panel">
+      <div class="toolbar">
+        <h2>Tus pines</h2>
+        <button type="button" id="clear" class="danger" hidden>Quitar todas</button>
+      </div>
+      <p class="note" style="margin:0 0 12px">Toca un pin para moverlo, cambiar su tamaño, elegir el fondo o ponerle texto. “Copias” repite el mismo pin.</p>
+      <div class="items" id="items"><div class="empty">Aún no hay imágenes.</div></div>
+    </div>
+
+    <div class="panel">
+      <h2>Vista previa de las hojas</h2>
+      <div class="pages" id="pages"><div class="empty">Aquí aparecerán las hojas.</div></div>
+    </div>
+  </section>
+</main>
+</div>
+
+<dialog id="editor">
+  <h2>Acomodar pin</h2>
+  <p class="hint">Arrastra para mover · rueda o pellizco para cambiar tamaño. Lo que queda fuera del círculo se recorta.</p>
+  <canvas id="edCanvas" width="900" height="900"></canvas>
+  <div class="legend">
+    <span><i style="color:#d23f66"></i>Corte</span>
+    <span><i style="color:#1f8a8a"></i>Cara visible (lo de afuera se dobla)</span>
+  </div>
+  <div class="ctl"><span>Tamaño</span><input type="range" id="edZoom" min="0" max="1" step="0.001"><output id="edZoomOut"></output></div>
+  <div class="btns">
+    <button type="button" data-act="fill">Llenar círculo</button>
+    <button type="button" data-act="whole">Imagen completa</button>
+    <button type="button" data-act="center">Centrar</button>
+    <label>Fondo <input type="color" id="edBg"></label>
+  </div>
+
+  <details class="text" id="textBox">
+    <summary>Texto</summary>
+    <div class="text-grid">
+      <label class="full">Escribe el texto
+        <input type="text" id="edText" maxlength="60" placeholder="Por ejemplo: tu nombre">
+      </label>
+      <label>Letra
+        <select id="edFont">
+          <option value="Fredoka">Redondita</option>
+          <option value="Baloo 2">Gordita</option>
+          <option value="Bebas Neue">Alta</option>
+          <option value="Pacifico">Cursiva</option>
+          <option value="Lobster">Retro</option>
+          <option value="Permanent Marker">Plumón</option>
+        </select>
+      </label>
+      <label>Forma
+        <select id="edMode">
+          <option value="top">Curva arriba</option>
+          <option value="bottom">Curva abajo</option>
+          <option value="straight">Recta</option>
+        </select>
+      </label>
+    </div>
+    <div class="ctl"><span>Tamaño</span><input type="range" id="edTSize" min="0.04" max="0.3" step="0.005"><output id="edTSizeOut"></output></div>
+    <div class="ctl"><span>Posición</span><input type="range" id="edTPos" min="0" max="1" step="0.005"><output id="edTPosOut"></output></div>
+    <div class="btns">
+      <label>Color <input type="color" id="edTColor"></label>
+      <label><input type="checkbox" id="edTStroke"> Contorno</label>
+      <input type="color" id="edTStrokeColor" aria-label="Color del contorno">
+    </div>
+  </details>
+
+  <div class="ed-foot">
+    <button type="button" data-act="reset">Empezar de nuevo</button>
+    <span>
+      <button type="button" data-act="cancel">Cancelar</button>
+      <button type="button" class="primary" data-act="done">Listo</button>
+    </span>
+  </div>
+</dialog>
+
+<div id="toast" role="status" hidden></div>
+
+<script>
+const PAPERS = {
+  carta:  [215.9, 279.4],
+  oficio: [216, 340],
+  legal:  [215.9, 355.6],
+  a4:     [210, 297],
+};
+const FONT_WEIGHTS = { 'Fredoka': 600, 'Baloo 2': 800, 'Bebas Neue': 400, 'Pacifico': 400, 'Lobster': 400, 'Permanent Marker': 400 };
+const THUMB = 240;          // px del lienzo de cada miniatura (se muestra a 120 css px)
+const PREVIEW_PX_PER_MM = 3;
+const CUT_COLOR = '#d23f66', FACE_COLOR = '#1f8a8a';
+
+const $ = (id) => document.getElementById(id);
+let items = [];
+let nextId = 1;
+
+function newText() {
+  return { value: '', font: 'Fredoka', mode: 'top', size: 0.11, y: 0.3, r: 0.33,
+           color: '#ffffff', stroke: true, strokeColor: '#2b2420' };
+}
+
+// ---------- Avisos ----------
+let toastTimer = 0;
+function toast(msg) {
+  const t = $('toast');
+  t.textContent = msg; t.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.hidden = true; }, 3500);
+}
+
+// ---------- Configuración y acomodo ----------
+const SETTING_IDS = ['paper', 'diameter', 'face', 'margin', 'gap', 'dpi', 'outline'];
+
+function settings() {
+  const [w, h] = PAPERS[$('paper').value];
+  const d = Math.max(1, parseFloat($('diameter').value) || 59);
+  return {
+    w, h, d,
+    face: Math.max(1, parseFloat($('face').value) || d),
+    margin: Math.max(0, parseFloat($('margin').value) || 0),
+    gap: Math.max(0, parseFloat($('gap').value) || 0),
+    dpi: parseInt($('dpi').value, 10),
+    outline: $('outline').checked,
+  };
+}
+
+function readSettingsForm() {
+  const o = {};
+  for (const id of SETTING_IDS) o[id] = $(id).type === 'checkbox' ? $(id).checked : $(id).value;
+  return o;
+}
+function writeSettingsForm(o) {
+  for (const id of SETTING_IDS) {
+    if (!(id in (o || {}))) continue;
+    if ($(id).type === 'checkbox') $(id).checked = !!o[id]; else $(id).value = o[id];
+  }
+}
+
+// Calcula cuántos círculos caben y centra la cuadrícula en la hoja.
+function layout(s) {
+  const cols = Math.floor((s.w - 2 * s.margin + s.gap) / (s.d + s.gap));
+  const rows = Math.floor((s.h - 2 * s.margin + s.gap) / (s.d + s.gap));
+  if (cols < 1 || rows < 1) return null;
+  const gridW = cols * s.d + (cols - 1) * s.gap;
+  const gridH = rows * s.d + (rows - 1) * s.gap;
+  const x0 = (s.w - gridW) / 2, y0 = (s.h - gridH) / 2;
+  const spots = [];
+  for (let r = 0; r < rows; r++)
+    for (let c = 0; c < cols; c++)
+      spots.push({ x: x0 + c * (s.d + s.gap), y: y0 + r * (s.d + s.gap) }); // esquina sup. izq.
+  return { cols, rows, spots };
+}
+
+function slots() {
+  const out = [];
+  for (const it of items) for (let i = 0; i < it.qty; i++) out.push(it);
+  return out;
+}
+
+// ---------- Dibujo de un pin ----------
+// Transformación de cada imagen: zoom (1 = llena el círculo justo),
+// ox/oy (desplazamiento del centro, en fracciones del diámetro). La escala es
+// uniforme, así que la proporción de la imagen nunca se deforma.
+const ZOOM_MIN = 0.1, ZOOM_MAX = 6;
+
+function baseScale(it, d) {
+  // Un rectángulo centrado cubre un círculo si su lado corto ≥ diámetro.
+  return d / Math.min(it.img.naturalWidth, it.img.naturalHeight);
+}
+
+function placeImage(ctx, it, cx, cy, d) {
+  const w = it.img.naturalWidth, h = it.img.naturalHeight;
+  const k = baseScale(it, d) * it.zoom;
+  ctx.save();
+  ctx.translate(cx + it.ox * d, cy + it.oy * d);
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(it.img, -w * k / 2, -h * k / 2, w * k, h * k);
+  ctx.restore();
+}
+
+const fontCss = (t, px) => `${FONT_WEIGHTS[t.font] || 400} ${px}px "${t.font}", system-ui, sans-serif`;
+
+// Texto recto o en curva. Tamaño y posición son fracciones del diámetro,
+// así se ve igual en la miniatura, la vista previa y el PDF.
+function drawText(ctx, t, cx, cy, d) {
+  const value = (t?.value || '').trim();
+  if (!value) return;
+  const px = t.size * d;
+  ctx.save();
+  ctx.font = fontCss(t, px);
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.lineJoin = 'round';
+  ctx.lineWidth = px * 0.16;
+  ctx.fillStyle = t.color;
+  ctx.strokeStyle = t.strokeColor;
+
+  let glyphs;   // [{ch, x, y, a}]
+  if (t.mode === 'straight') {
+    glyphs = [{ ch: value, x: cx, y: cy + t.y * d, a: 0 }];
+  } else {
+    const r = t.r * d, top = t.mode === 'top';
+    const chars = [...value];
+    const widths = chars.map(ch => ctx.measureText(ch).width + px * 0.03);
+    const total = widths.reduce((a, b) => a + b, 0);
+    let acc = 0;
+    glyphs = chars.map((ch, i) => {
+      const off = (acc + widths[i] / 2 - total / 2) / r;
+      acc += widths[i];
+      const a = top ? -Math.PI / 2 + off : Math.PI / 2 - off;
+      return { ch, x: cx + r * Math.cos(a), y: cy + r * Math.sin(a), a: top ? a + Math.PI / 2 : a - Math.PI / 2 };
+    });
+  }
+  // Primero todos los contornos y luego todos los rellenos, para que no se encimen.
+  for (const pass of t.stroke ? ['stroke', 'fill'] : ['fill']) {
+    for (const g of glyphs) {
+      ctx.save();
+      ctx.translate(g.x, g.y);
+      ctx.rotate(g.a);
+      pass === 'stroke' ? ctx.strokeText(g.ch, 0, 0) : ctx.fillText(g.ch, 0, 0);
+      ctx.restore();
+    }
+  }
+  ctx.restore();
+}
+
+function drawPin(ctx, it, cx, cy, d) {
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx, cy, d / 2, 0, Math.PI * 2);
+  ctx.clip();
+  ctx.fillStyle = it.bg;
+  ctx.fillRect(cx - d / 2, cy - d / 2, d, d);
+  placeImage(ctx, it, cx, cy, d);
+  drawText(ctx, it.text, cx, cy, d);
+  ctx.restore();
+}
+
+// Zoom con el que la imagen completa (con sus esquinas) cabe dentro del círculo.
+function fitWholeZoom(it) {
+  const w = it.img.naturalWidth, h = it.img.naturalHeight;
+  return Math.min(w, h) / Math.hypot(w, h);
+}
+
+function faceRatio() {
+  const s = settings();
+  return s.face < s.d ? s.face / s.d : null;
+}
+
+function strokeCircle(ctx, cx, cy, r, color, width, dash) {
+  ctx.save();
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.setLineDash(dash); ctx.strokeStyle = color; ctx.lineWidth = width; ctx.stroke();
+  ctx.restore();
+}
+
+// Las fuentes de Google llegan después; el lienzo necesita tenerlas antes de dibujar.
+function ensureFont(t) {
+  if (!t?.value?.trim() || !document.fonts?.load) return Promise.resolve();
+  return document.fonts.load(fontCss(t, 40), t.value).catch(() => {});
+}
+
+// ---------- Guardado automático en este navegador ----------
+const store = (() => {
+  let ready;
+  try {
+    ready = new Promise((res, rej) => {
+      const r = indexedDB.open('hojas-de-pines', 1);
+      r.onupgradeneeded = () => { r.result.createObjectStore('images'); r.result.createObjectStore('state'); };
+      r.onsuccess = () => res(r.result);
+      r.onerror = () => rej(r.error);
+    });
+  } catch (e) { ready = Promise.reject(e); }
+  ready.catch(() => {});
+  const run = (name, mode, fn) => ready.then(db => new Promise((res, rej) => {
+    const tx = db.transaction(name, mode);
+    const req = fn(tx.objectStore(name));
+    tx.oncomplete = () => res(req && req.result);
+    tx.onerror = () => rej(tx.error);
+  })).catch(() => undefined);
+  return {
+    putImage: (id, blob) => run('images', 'readwrite', s => s.put(blob, id)),
+    getImage: (id) => run('images', 'readonly', s => s.get(id)),
+    deleteImage: (id) => run('images', 'readwrite', s => s.delete(id)),
+    clearImages: () => run('images', 'readwrite', s => s.clear()),
+    putState: (state) => run('state', 'readwrite', s => s.put(state, 'current')),
+    getState: () => run('state', 'readonly', s => s.get('current')),
+  };
+})();
+
+const itemMeta = it => ({ id: it.id, name: it.name, zoom: it.zoom, ox: it.ox, oy: it.oy, bg: it.bg, qty: it.qty, text: it.text });
+
+let saveTimer = 0;
+function scheduleSave() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    store.putState({ v: 1, settings: readSettingsForm(), items: items.map(itemMeta) });
+  }, 400);
+}
+
+async function restore() {
+  const state = await store.getState();
+  if (!state) return;
+  writeSettingsForm(state.settings);
+  let lost = 0;
+  for (const meta of state.items || []) {
+    const blob = await store.getImage(meta.id);
+    if (!blob) { lost++; continue; }
+    try {
+      const img = await loadImage(blob);
+      items.push({ ...meta, text: { ...newText(), ...meta.text }, img, blob });
+    } catch { lost++; }
+  }
+  nextId = items.reduce((m, it) => Math.max(m, it.id + 1), nextId);
+  if (items.length) {
+    await Promise.all(items.map(it => ensureFont(it.text)));
+    toast(`Recuperé tu trabajo anterior: ${items.length} pin${items.length > 1 ? 'es' : ''}.` +
+      (lost ? ` No pude recuperar ${lost}.` : ''));
+  }
+  renderItems();
+  refresh();
+}
+
+// ---------- Agregar imágenes ----------
+function loadImage(blob) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(blob);
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error(blob.name || 'imagen')); };
+    img.src = url;
+  });
+}
+
+async function addImage(blob, name, meta = {}) {
+  const img = await loadImage(blob);
+  const it = { zoom: 1, ox: 0, oy: 0, bg: '#ffffff', qty: 1, ...meta,
+               text: { ...newText(), ...meta.text }, id: nextId++, name, img, blob };
+  items.push(it);
+  store.putImage(it.id, blob);
+  await ensureFont(it.text);
+  return it;
+}
+
+async function addFiles(fileList) {
+  const files = [...fileList].filter(f => f && f.type.startsWith('image/'));
+  const failed = [];
+  for (const f of files) {
+    try { await addImage(f, f.name || 'imagen'); } catch (e) { failed.push(f.name || 'imagen'); }
+  }
+  if (failed.length) toast('No se pudieron abrir: ' + failed.join(', '));
+  renderItems();
+  refresh();
+}
+
+const drop = $('drop'), fileInput = $('file');
+drop.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', () => { addFiles(fileInput.files); fileInput.value = ''; });
+['dragenter', 'dragover'].forEach(ev => document.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
+['dragleave', 'drop'].forEach(ev => document.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over'); }));
+document.addEventListener('drop', e => { if (e.dataTransfer?.files?.length) addFiles(e.dataTransfer.files); });
+document.addEventListener('paste', e => {
+  const files = [...(e.clipboardData?.items || [])].filter(i => i.kind === 'file').map(i => i.getAsFile());
+  if (files.length) addFiles(files);
+});
+
+// ---------- Tarjetas de cada imagen ----------
+function renderThumb(canvas, it) {
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d'), c = THUMB / 2, d = THUMB - 4;
+  ctx.clearRect(0, 0, THUMB, THUMB);
+  drawPin(ctx, it, c, c, d);
+  strokeCircle(ctx, c, c, d / 2, '#bbb', 2, []);
+  const f = faceRatio();
+  if (f) strokeCircle(ctx, c, c, d * f / 2, FACE_COLOR, 2, [6, 5]);
+}
+
+function renderItems() {
+  const box = $('items');
+  box.innerHTML = '';
+  $('clear').hidden = items.length === 0;
+  $('exportBtn').disabled = items.length === 0;
+  if (!items.length) { box.innerHTML = '<div class="empty">Aún no hay imágenes.</div>'; return; }
+
+  for (const it of items) {
+    const card = document.createElement('div');
+    card.className = 'item';
+    card.innerHTML = `
+      <canvas width="${THUMB}" height="${THUMB}" title="Toca para acomodar"></canvas>
+      <div class="name"></div>
+      <button type="button" class="edit">Acomodar</button>
+      <div class="row">
+        <label>Copias <input type="number" min="1" max="999" step="1" id="qty-${it.id}"></label>
+        <button type="button" class="remove" title="Quitar" aria-label="Quitar">✕</button>
+      </div>`;
+    const canvas = card.querySelector('canvas');
+    const qty = card.querySelector('input');
+    card.querySelector('.name').textContent = it.name;
+    qty.value = it.qty;
+    it.thumb = canvas;
+    renderThumb(canvas, it);
+    canvas.addEventListener('click', () => openEditor(it));
+    card.querySelector('.edit').addEventListener('click', () => openEditor(it));
+
+    qty.addEventListener('input', () => {
+      it.qty = Math.max(1, Math.min(999, parseInt(qty.value, 10) || 1)); refresh();
+    });
+    card.querySelector('.remove').addEventListener('click', () => {
+      URL.revokeObjectURL(it.img.src);
+      store.deleteImage(it.id);
+      items = items.filter(x => x !== it);
+      renderItems(); refresh();
+    });
+    box.appendChild(card);
+  }
+}
+
+// “Quitar todas” pide una segunda confirmación dentro de la página.
+let clearArmed = 0;
+$('clear').addEventListener('click', () => {
+  const btn = $('clear');
+  if (!clearArmed) {
+    btn.textContent = '¿Seguro? Toca otra vez';
+    clearArmed = setTimeout(() => { clearArmed = 0; btn.textContent = 'Quitar todas'; }, 4000);
+    return;
+  }
+  clearTimeout(clearArmed); clearArmed = 0; btn.textContent = 'Quitar todas';
+  items.forEach(it => URL.revokeObjectURL(it.img.src));
+  items = [];
+  store.clearImages();
+  renderItems(); refresh();
+});
+
+// ---------- Editor ----------
+const editor = $('editor'), edCanvas = $('edCanvas');
+const ED = edCanvas.width, ED_D = ED * 0.72;   // diámetro del círculo dentro del lienzo del editor
+let edItem = null, edBackup = null;
+
+// El deslizador de tamaño es logarítmico para que se sienta parejo al acercar y alejar.
+const zoomToSlider = z => Math.log(z / ZOOM_MIN) / Math.log(ZOOM_MAX / ZOOM_MIN);
+const sliderToZoom = v => ZOOM_MIN * Math.pow(ZOOM_MAX / ZOOM_MIN, v);
+// Posición del texto: recto = altura (-0.45 arriba … 0.45 abajo); curvo = distancia al centro.
+const posToSlider = t => t.mode === 'straight' ? (t.y + 0.45) / 0.9 : (t.r - 0.1) / 0.4;
+const sliderToPos = (t, v) => { if (t.mode === 'straight') t.y = v * 0.9 - 0.45; else t.r = 0.1 + v * 0.4; };
+
+function drawEditor() {
+  const it = edItem, ctx = edCanvas.getContext('2d'), c = ED / 2;
+  ctx.clearRect(0, 0, ED, ED);
+  ctx.fillStyle = '#e6e0da'; ctx.fillRect(0, 0, ED, ED);
+  // Imagen completa tenue, para ver qué queda fuera del pin.
+  ctx.globalAlpha = 0.35; placeImage(ctx, it, c, c, ED_D); ctx.globalAlpha = 1;
+  drawPin(ctx, it, c, c, ED_D);
+  const f = faceRatio();
+  if (f) {
+    // Sombrea el anillo que se dobla hacia el costado.
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(c, c, ED_D / 2, 0, Math.PI * 2);
+    ctx.arc(c, c, ED_D * f / 2, 0, Math.PI * 2, true);
+    ctx.fillStyle = 'rgba(0,0,0,.22)'; ctx.fill();
+    ctx.restore();
+    strokeCircle(ctx, c, c, ED_D * f / 2, FACE_COLOR, 4, [14, 10]);
+  }
+  strokeCircle(ctx, c, c, ED_D / 2, CUT_COLOR, 4, [14, 10]);
+
+  $('edZoom').value = zoomToSlider(it.zoom);
+  $('edZoomOut').textContent = Math.round(it.zoom * 100) + '%';
+  $('edBg').value = it.bg;
+  const t = it.text;
+  $('edTSize').value = t.size;
+  $('edTSizeOut').textContent = Math.round(t.size * settings().d) + ' mm';
+  $('edTPos').value = posToSlider(t);
+  $('edTPosOut').textContent = Math.round(posToSlider(t) * 100) + '%';
+}
+
+function edChanged() {
+  edItem.zoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, edItem.zoom));
+  drawEditor();
+  renderThumb(edItem.thumb, edItem);
+  refresh();
+}
+
+function openEditor(it) {
+  edItem = it;
+  edBackup = { zoom: it.zoom, ox: it.ox, oy: it.oy, bg: it.bg, text: { ...it.text } };
+  openEditorFields(it);
+  $('textBox').open = !!it.text.value;
+  drawEditor();
+  editor.showModal();
+}
+
+// Cerrar con Esc o “Cancelar” deshace los cambios; “Listo” los conserva.
+function closeEditor(keep) {
+  if (keep) edBackup = null;
+  editor.close();
+}
+editor.addEventListener('close', () => {
+  if (edBackup) Object.assign(edItem, edBackup);
+  edBackup = null;
+  renderThumb(edItem.thumb, edItem); refresh();
+});
+
+$('edZoom').addEventListener('input', e => { edItem.zoom = sliderToZoom(parseFloat(e.target.value)); edChanged(); });
+$('edBg').addEventListener('input', e => { edItem.bg = e.target.value; edChanged(); });
+
+function textChanged() { ensureFont(edItem.text).then(edChanged); edChanged(); }
+$('edText').addEventListener('input', e => { edItem.text.value = e.target.value; textChanged(); });
+$('edFont').addEventListener('change', e => { edItem.text.font = e.target.value; textChanged(); });
+$('edMode').addEventListener('change', e => { edItem.text.mode = e.target.value; edChanged(); });
+$('edTSize').addEventListener('input', e => { edItem.text.size = parseFloat(e.target.value); edChanged(); });
+$('edTPos').addEventListener('input', e => { sliderToPos(edItem.text, parseFloat(e.target.value)); edChanged(); });
+$('edTColor').addEventListener('input', e => { edItem.text.color = e.target.value; edChanged(); });
+$('edTStroke').addEventListener('change', e => { edItem.text.stroke = e.target.checked; edChanged(); });
+$('edTStrokeColor').addEventListener('input', e => { edItem.text.strokeColor = e.target.value; edChanged(); });
+
+editor.querySelectorAll('[data-act]').forEach(b => b.addEventListener('click', () => {
+  const it = edItem;
+  switch (b.dataset.act) {
+    case 'fill': it.zoom = 1; it.ox = it.oy = 0; break;
+    case 'whole': it.zoom = fitWholeZoom(it); it.ox = it.oy = 0; break;
+    case 'center': it.ox = it.oy = 0; break;
+    case 'reset':
+      Object.assign(it, { zoom: 1, ox: 0, oy: 0, bg: '#ffffff', text: newText() });
+      openEditorFields(it);
+      break;
+    case 'cancel': closeEditor(false); return;
+    case 'done': closeEditor(true); return;
+  }
+  edChanged();
+}));
+
+function openEditorFields(it) {
+  const t = it.text;
+  $('edText').value = t.value; $('edFont').value = t.font; $('edMode').value = t.mode;
+  $('edTColor').value = t.color; $('edTStroke').checked = t.stroke; $('edTStrokeColor').value = t.strokeColor;
+}
+
+edCanvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  edItem.zoom *= e.deltaY < 0 ? 1.05 : 1 / 1.05;
+  edChanged();
+}, { passive: false });
+
+// Arrastre con un dedo/ratón; pellizco con dos dedos.
+const pointers = new Map();
+let gesture = null;
+const pinchDist = () => { const [a, b] = [...pointers.values()]; return Math.hypot(b.x - a.x, b.y - a.y); };
+edCanvas.addEventListener('pointerdown', e => {
+  edCanvas.setPointerCapture(e.pointerId);
+  pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (pointers.size === 2) gesture = { dist: pinchDist(), zoom: edItem.zoom };
+});
+edCanvas.addEventListener('pointermove', e => {
+  const prev = pointers.get(e.pointerId);
+  if (!prev) return;
+  const cur = { x: e.clientX, y: e.clientY };
+  pointers.set(e.pointerId, cur);
+  if (pointers.size === 1) {
+    // Pixeles en pantalla → fracción del diámetro del círculo.
+    const dPx = edCanvas.getBoundingClientRect().width * (ED_D / ED);
+    edItem.ox += (cur.x - prev.x) / dPx;
+    edItem.oy += (cur.y - prev.y) / dPx;
+  } else if (pointers.size === 2 && gesture) {
+    edItem.zoom = gesture.zoom * pinchDist() / gesture.dist;
+  }
+  edChanged();
+});
+const endPointer = e => { pointers.delete(e.pointerId); if (pointers.size < 2) gesture = null; };
+edCanvas.addEventListener('pointerup', endPointer);
+edCanvas.addEventListener('pointercancel', endPointer);
+
+// ---------- Vista previa ----------
+let refreshTimer = 0;
+function refresh() {
+  clearTimeout(refreshTimer);
+  refreshTimer = setTimeout(renderPreview, 60);
+  scheduleSave();
+}
+
+function renderPreview() {
+  const s = settings();
+  const L = layout(s);
+  const all = slots();
+  const warn = $('warn'), pagesBox = $('pages'), stats = $('stats'), fillBtn = $('fillBtn');
+  pagesBox.innerHTML = '';
+  fillBtn.hidden = true;
+
+  if (!L) {
+    warn.hidden = false;
+    warn.textContent = 'El círculo no cabe en la hoja con ese margen. Reduce el diámetro o el margen.';
+    stats.textContent = '—';
+    $('download').disabled = true;
+    return;
+  }
+  warn.hidden = true;
+  const per = L.spots.length;
+  const nPages = Math.ceil(all.length / per);
+  const free = nPages * per - all.length;
+
+  if (!all.length) {
+    stats.innerHTML = `Caben <b>${per}</b> pines por hoja (${L.cols} × ${L.rows}).`;
+    pagesBox.innerHTML = '<div class="empty">Aquí aparecerán las hojas.</div>';
+    $('download').disabled = true;
+    return;
+  }
+  stats.innerHTML = `<b>${all.length}</b> pines · <b>${per}</b> por hoja (${L.cols} × ${L.rows}) · <b>${nPages}</b> hoja${nPages > 1 ? 's' : ''}` +
+    (free ? `<br><span class="sub">Quedan ${free} círculo${free > 1 ? 's' : ''} libre${free > 1 ? 's' : ''} en la última hoja.</span>` : '');
+  if (free) {
+    fillBtn.hidden = false;
+    fillBtn.textContent = `Llenar los ${free} lugares libres con copias`;
+    fillBtn.dataset.free = free;
+  }
+  $('download').disabled = false;
+
+  const k = PREVIEW_PX_PER_MM;
+  for (let p = 0; p < nPages; p++) {
+    const wrap = document.createElement('div');
+    wrap.className = 'page';
+    const c = document.createElement('canvas');
+    c.width = Math.round(s.w * k); c.height = Math.round(s.h * k);
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+    L.spots.forEach((spot, i) => {
+      const it = all[p * per + i];
+      const cx = (spot.x + s.d / 2) * k, cy = (spot.y + s.d / 2) * k, d = s.d * k;
+      if (it) drawPin(ctx, it, cx, cy, d);
+      if (s.outline || !it) strokeCircle(ctx, cx, cy, d / 2, it ? '#999' : '#ddd', 1, []);
+    });
+    wrap.appendChild(c);
+    wrap.appendChild(document.createTextNode(`Hoja ${p + 1} de ${nPages}`));
+    pagesBox.appendChild(wrap);
+  }
+}
+
+// Reparte los lugares libres entre los pines, uno a uno y en orden.
+$('fillBtn').addEventListener('click', () => {
+  let free = parseInt($('fillBtn').dataset.free, 10) || 0;
+  for (let i = 0; free > 0 && items.length; i++, free--) items[i % items.length].qty++;
+  renderItems(); refresh();
+  toast('Listo: la última hoja ya está completa.');
+});
+
+SETTING_IDS.forEach(id => {
+  $(id).addEventListener('input', () => { refresh(); items.forEach(it => renderThumb(it.thumb, it)); });
+  $(id).addEventListener('change', refresh);
+});
+
+document.fonts?.addEventListener?.('loadingdone', () => {
+  items.forEach(it => renderThumb(it.thumb, it));
+  if (editor.open) drawEditor();
+  refresh();
+});
+
+// ---------- Guardar archivos ----------
+// Dentro de claude.ai las descargas pasan por la capacidad "downloads";
+// como archivo suelto o en otra página web se usa un enlace de descarga normal.
+const downloadsReady = window.claude?.use ? window.claude.use('downloads').catch(() => null) : Promise.resolve(null);
+
+async function saveFile(filename, blob) {
+  const downloads = await downloadsReady;
+  if (downloads) {
+    try { await downloads.save({ filename, data: blob }); return true; }
+    catch (e) {
+      if (e?.code === 'declined') return false;
+      if (e?.code === 'rate_limited') { toast('Ya hay una descarga esperando tu respuesta.'); return false; }
+      toast('No se pudo descargar aquí (' + (e?.code || 'error') + ').');
+      return false;
+    }
+  }
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+  return true;
+}
+
+const today = () => new Date().toISOString().slice(0, 10);
+
+// ---------- Proyecto como archivo ----------
+const blobToDataURL = b => new Promise((res, rej) => {
+  const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(r.error); r.readAsDataURL(b);
+});
+function dataURLToBlob(url) {
+  const [head, data] = url.split(',');
+  const type = (head.match(/data:([^;]+)/) || [])[1] || 'image/png';
+  const bin = atob(data);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new Blob([bytes], { type });
+}
+
+$('exportBtn').addEventListener('click', async () => {
+  const btn = $('exportBtn');
+  btn.disabled = true; btn.textContent = 'Preparando…';
+  try {
+    const out = { app: 'hojas-de-pines', v: 1, settings: readSettingsForm(), items: [] };
+    for (const it of items) out.items.push({ ...itemMeta(it), image: await blobToDataURL(it.blob) });
+    const blob = new Blob([JSON.stringify(out)], { type: 'application/json' });
+    if (await saveFile(`pines-proyecto-${today()}.json`, blob)) toast('Proyecto guardado.');
+  } catch (e) {
+    console.error(e); toast('No se pudo guardar el proyecto: ' + e.message);
+  } finally {
+    btn.textContent = 'Guardar proyecto'; btn.disabled = items.length === 0;
+  }
+});
+
+$('importBtn').addEventListener('click', () => $('importFile').click());
+$('importFile').addEventListener('change', async () => {
+  const f = $('importFile').files[0];
+  $('importFile').value = '';
+  if (!f) return;
+  try {
+    const data = JSON.parse(await f.text());
+    if (data.app !== 'hojas-de-pines' || !Array.isArray(data.items)) throw new Error('no es un proyecto de Hojas de Pines');
+    writeSettingsForm(data.settings);
+    let n = 0;
+    for (const meta of data.items) {
+      try {
+        const { id, image, name, ...rest } = meta;
+        await addImage(dataURLToBlob(image), name || 'imagen', rest);
+        n++;
+      } catch (e) { console.error(e); }
+    }
+    renderItems(); refresh();
+    toast(`Agregué ${n} pin${n === 1 ? '' : 'es'} del proyecto.`);
+  } catch (e) {
+    toast('No pude abrir ese archivo: ' + e.message);
+  }
+});
+
+// ---------- PDF ----------
+const tick = () => new Promise(r => setTimeout(r, 0));
+
+// Arma el PDF; onProgress recibe mensajes para el botón.
+async function buildPdf(onProgress = () => {}) {
+  const s = settings();
+  const L = layout(s);
+  const all = slots();
+  if (!L || !all.length) return null;
+  await Promise.all(items.map(it => ensureFont(it.text)));
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'mm', format: [s.w, s.h], orientation: 'portrait', compress: true });
+  const px = Math.round(s.d / 25.4 * s.dpi);
+  const cache = new Map();   // una sola imagen por pin aunque tenga varias copias
+
+  const per = L.spots.length;
+  const nPages = Math.ceil(all.length / per);
+  for (let p = 0; p < nPages; p++) {
+    if (p > 0) doc.addPage([s.w, s.h], 'portrait');
+    for (let i = 0; i < per; i++) {
+      const it = all[p * per + i];
+      if (!it) break;
+      const spot = L.spots[i];
+      if (!cache.has(it.id)) {
+        onProgress(`Preparando imagen ${cache.size + 1} de ${items.length}…`);
+        await tick();
+        const c = document.createElement('canvas');
+        c.width = c.height = px;
+        const ctx = c.getContext('2d');
+        ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, px, px);
+        drawPin(ctx, it, px / 2, px / 2, px);
+        cache.set(it.id, c.toDataURL('image/jpeg', 0.95));
+      }
+      doc.addImage(cache.get(it.id), 'JPEG', spot.x, spot.y, s.d, s.d, 'pin' + it.id, 'NONE');
+      if (s.outline) {
+        doc.setDrawColor(150); doc.setLineWidth(0.2);
+        doc.circle(spot.x + s.d / 2, spot.y + s.d / 2, s.d / 2, 'S');
+      }
+    }
+  }
+  return doc;
+}
+
+$('download').addEventListener('click', async () => {
+  if (!window.jspdf) {
+    toast('No se pudo cargar el generador de PDF. Revisa tu conexión a internet y recarga la página.');
+    return;
+  }
+  const btn = $('download');
+  btn.disabled = true;
+  try {
+    const doc = await buildPdf(msg => { btn.textContent = msg; });
+    if (!doc) return;
+    btn.textContent = 'Guardando PDF…';
+    await tick();
+    if (await saveFile(`pines-${today()}.pdf`, doc.output('blob'))) toast('PDF listo.');
+  } catch (e) {
+    console.error(e);
+    toast('Algo falló al crear el PDF: ' + e.message);
+  } finally {
+    btn.textContent = 'Descargar PDF';
+    btn.disabled = false;
+  }
+});
+
+renderPreview();
+restore();
+</script>

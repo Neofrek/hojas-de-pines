@@ -408,7 +408,8 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
 
 </script>
 <style>
-  /* Mesa de trabajo: controles a la izquierda, pines y hojas a la derecha. */
+  /* Mesa de trabajo: controles a la izquierda, pines y hojas a la derecha.
+     En el celular, una sola columna: fotos → pines → hoja → descargar → vista previa. */
   :root {
     --bg: #f8f5f1;
     --panel: #ffffff;
@@ -438,6 +439,8 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     --danger: #ff8a80; --shadow: rgba(0, 0, 0, .45); color-scheme: dark;
   }
   * { box-sizing: border-box; }
+  html { touch-action: manipulation; -webkit-text-size-adjust: 100%; }
+  html.modal-open { overflow: hidden; }
   body {
     margin: 0; background: var(--bg); color: var(--ink);
     font: 15px/1.45 var(--font-body);
@@ -450,8 +453,14 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     display: grid; grid-template-columns: 360px minmax(0, 1fr); gap: 20px;
     margin-top: 18px; align-items: start;
   }
-  @media (max-width: 900px) { main { grid-template-columns: minmax(0, 1fr); } }
   main > section { display: grid; gap: 16px; min-width: 0; }
+  @media (max-width: 900px) {
+    main { display: flex; flex-direction: column; gap: 14px; margin-top: 14px; }
+    main > section { display: contents; }
+    #pImages { order: 1; } #pPins { order: 2; } #pSheet { order: 3; } #pDownload { order: 4; } #pPreview { order: 5; }
+    .wrap { padding-block: 14px 110px; }
+    header h1 { font-size: 24px; }
+  }
   .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px; min-width: 0; }
   .panel h2 { margin: 0 0 12px; font: 600 17px/1.2 var(--font-display); }
   .drop {
@@ -463,10 +472,16 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   .drop small { display: block; color: var(--muted); margin-top: 4px; }
   .row-btns { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
   .row-btns button { flex: 1 1 140px; }
-  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; }
-  @media (max-width: 420px) { .grid2 { grid-template-columns: 1fr; } }
+  .grid2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px 12px; }
+  details.panel > summary { list-style: none; cursor: pointer; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  details.panel > summary::-webkit-details-marker { display: none; }
+  details.panel > summary h2 { margin: 0; }
+  details.panel > summary .sum { color: var(--muted); font-size: 14px; flex: 1; }
+  details.panel > summary .chev { color: var(--accent); font-weight: 700; font-size: 14px; }
+  details.panel[open] > summary { margin-bottom: 12px; }
+  details.panel[open] > summary .chev-closed, details.panel:not([open]) > summary .chev-open { display: none; }
   label { display: block; font-size: 13px; color: var(--muted); }
-  input, select, textarea { font: inherit; color: var(--ink); }
+  input, select, textarea { font: inherit; font-size: 16px; color: var(--ink); }
   label > input:not([type=checkbox]):not([type=color]), label > select {
     display: block; width: 100%; margin-top: 3px; padding: 7px 8px;
     border: 1px solid var(--line); border-radius: 8px; background: var(--field);
@@ -497,6 +512,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   .items { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
   .item { border: 1px solid var(--line); border-radius: 12px; padding: 10px; display: grid; gap: 6px; text-align: center; min-width: 0; }
   .item canvas { width: 120px; height: 120px; max-width: 100%; cursor: pointer; display: block; margin: 0 auto; border-radius: 50%; }
+  canvas { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
   .item .name { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .item .edit { padding: 5px; font-size: 13px; }
   .item .row { display: flex; gap: 6px; align-items: center; justify-content: space-between; }
@@ -507,16 +523,26 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   .pages { display: flex; flex-wrap: wrap; gap: 18px; }
   .page { text-align: center; font-size: 13px; color: var(--muted); }
   .page canvas { display: block; width: 260px; max-width: 100%; height: auto; background: #fff; box-shadow: 0 2px 10px var(--shadow); margin-bottom: 6px; }
+  @media (max-width: 900px) {
+    .pages { gap: 14px; }
+    .page { flex: 1 1 calc(50% - 7px); max-width: calc(50% - 7px); }
+    .page canvas { width: 100%; }
+  }
 
   dialog#editor {
-    border: 1px solid var(--line); border-radius: 16px; padding: 18px; width: min(540px, calc(100vw - 24px));
-    max-height: calc(100vh - 24px); overflow: auto;
+    border: 1px solid var(--line); border-radius: 16px; padding: 0; width: min(540px, calc(100vw - 24px));
+    max-height: calc(100vh - 24px); max-height: calc(100dvh - 24px);
     box-shadow: 0 10px 40px var(--shadow); color: var(--ink); background: var(--panel);
   }
+  dialog#editor[open] { display: flex; flex-direction: column; }
   dialog#editor::backdrop { background: rgba(30, 20, 15, .5); }
+  .ed-body { overflow: auto; padding: 18px 18px 8px; flex: 1 1 auto; overscroll-behavior: contain; }
   #editor h2 { margin: 0 0 4px; font: 600 18px/1.2 var(--font-display); }
   #editor .hint { margin: 0 0 10px; font-size: 13px; color: var(--muted); }
-  #edCanvas { width: 100%; max-width: 100%; aspect-ratio: 1; display: block; border-radius: 12px; touch-action: none; cursor: grab; }
+  #edCanvas {
+    width: min(100%, 54vh); width: min(100%, 54dvh); max-width: 100%; aspect-ratio: 1; display: block; margin-inline: auto;
+    border-radius: 12px; touch-action: none; cursor: grab;
+  }
   #edCanvas:active { cursor: grabbing; }
   .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--muted); margin-top: 6px; }
   .legend i { display: inline-block; width: 18px; border-top: 3px dashed; vertical-align: middle; margin-right: 4px; }
@@ -533,15 +559,56 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   .text-line h3 { margin: 0 0 6px; font: 600 13px/1.2 var(--font-body); color: var(--muted); letter-spacing: .03em; text-transform: uppercase; }
   .text-grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 8px; }
   .text-grid input, .text-grid select { width: 100%; padding: 7px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--field); }
-  .ed-foot { display: flex; justify-content: space-between; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+  .ed-foot {
+    display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap;
+    padding: 12px 18px calc(12px + env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--line); background: var(--panel);
+  }
   .ed-foot span { display: flex; gap: 8px; }
   .ed-foot .primary { width: auto; padding: 9px 22px; font-size: 15px; }
 
+  @media (max-width: 600px) {
+    dialog#editor {
+      width: 100vw; max-width: 100vw; height: 100vh; height: 100dvh; max-height: 100vh; max-height: 100dvh;
+      margin: 0; border: 0; border-radius: 0;
+    }
+    .ed-body { padding: calc(14px + env(safe-area-inset-top, 0px)) 16px 8px; }
+    .ed-foot { padding-inline: 16px; }
+    .ed-foot span { flex: 1; }
+    .ed-foot span button { flex: 1; }
+  }
+
+  /* Barra de descarga fija abajo, solo en pantallas angostas. */
+  .mbar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 5;
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px));
+    background: var(--panel); border-top: 1px solid var(--line); box-shadow: 0 -4px 16px var(--shadow);
+  }
+  .mbar span { flex: 1; font-size: 14px; font-variant-numeric: tabular-nums; }
+  .mbar .primary { width: auto; padding: 12px 18px; }
+  @media (min-width: 901px) { .mbar { display: none; } }
+
+  /* Ayudas distintas para dedo y para ratón. */
+  .touch-only { display: none; }
+  @media (hover: none) and (pointer: coarse) {
+    .touch-only { display: inline; }
+    .mouse-only { display: none; }
+    button { min-height: 44px; }
+    .item .row input { width: 64px; height: 44px; }
+    .item .row button { min-width: 44px; }
+    .item .edit { min-height: 40px; }
+    input[type=color] { width: 44px; height: 44px; }
+    input[type=checkbox] { width: 22px; height: 22px; }
+    .ctl { grid-template-columns: 72px minmax(0, 1fr) 52px; margin-top: 14px; }
+  }
+
   #toast {
     position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
+    width: max-content;
     background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 10px;
     font-size: 14px; max-width: calc(100vw - 32px); box-shadow: 0 4px 18px var(--shadow); z-index: 10;
   }
+  @media (max-width: 900px) { #toast { bottom: calc(84px + env(safe-area-inset-bottom, 0px)); } }
   @media (prefers-reduced-motion: no-preference) { #toast { transition: opacity .2s; } }
 </style>
 
@@ -553,11 +620,11 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
 
 <main>
   <section>
-    <div class="panel">
-      <h2>1. Imágenes</h2>
+    <div class="panel" id="pImages">
+      <h2>Imágenes</h2>
       <button type="button" class="drop" id="drop">
-        <strong>Elegir imágenes</strong>
-        <small>o arrástralas aquí · también puedes pegar (Ctrl/Cmd + V)</small>
+        <strong><span class="mouse-only">Elegir imágenes</span><span class="touch-only">Elegir fotos</span></strong>
+        <small><span class="mouse-only">o arrástralas aquí · también puedes pegar (Ctrl/Cmd + V)</span><span class="touch-only">Puedes elegir varias a la vez</span></small>
       </button>
       <input type="file" id="file" accept="image/*" multiple hidden>
       <div class="row-btns">
@@ -565,11 +632,15 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
         <button type="button" id="importBtn">Abrir proyecto</button>
       </div>
       <input type="file" id="importFile" accept=".json,application/json" hidden>
-      <p class="note" id="autosaveNote">Tu trabajo se guarda solo en este navegador. “Guardar proyecto” crea un archivo para pasarlo a otra computadora.</p>
+      <p class="note" id="autosaveNote">Tu trabajo se guarda solo en este navegador. “Guardar proyecto” crea un archivo para pasarlo a otro dispositivo.</p>
     </div>
 
-    <div class="panel">
-      <h2>2. Hoja</h2>
+    <details class="panel" id="pSheet" open>
+      <summary>
+        <h2>Hoja</h2>
+        <span class="sum" id="sheetSummary"></span>
+        <span class="chev chev-closed">Cambiar</span><span class="chev chev-open">Cerrar</span>
+      </summary>
       <div class="grid2">
         <label>Tamaño de hoja
           <select id="paper">
@@ -580,10 +651,10 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
           </select>
         </label>
         <label>Círculo de corte (mm)
-          <input type="number" id="diameter" value="59" min="10" max="200" step="0.5">
+          <input type="number" id="diameter" value="59" min="10" max="200" step="0.5" inputmode="decimal">
         </label>
         <label>Cara visible del pin (mm)
-          <input type="number" id="face" value="48" min="5" max="200" step="0.5">
+          <input type="number" id="face" value="48" min="5" max="200" step="0.5" inputmode="decimal">
         </label>
         <label>Calidad
           <select id="dpi">
@@ -593,18 +664,18 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
         </label>
         <p class="field-note">Cara visible: mide el frente de un pin ya terminado. Lo que quede fuera se dobla hacia el costado.</p>
         <label>Margen de la hoja (mm)
-          <input type="number" id="margin" value="8" min="0" max="40" step="0.5">
+          <input type="number" id="margin" value="8" min="0" max="40" step="0.5" inputmode="decimal">
         </label>
         <label>Separación (mm)
-          <input type="number" id="gap" value="6" min="0" max="40" step="0.5">
+          <input type="number" id="gap" value="6" min="0" max="40" step="0.5" inputmode="decimal">
         </label>
       </div>
       <label class="check"><input type="checkbox" id="outline" checked> Dibujar línea de corte</label>
       <div class="warn" id="warn" hidden></div>
-    </div>
+    </details>
 
-    <div class="panel">
-      <h2>3. Descargar</h2>
+    <div class="panel" id="pDownload">
+      <h2>Descargar</h2>
       <p class="stats" id="stats">Agrega imágenes para empezar.</p>
       <button type="button" id="fillBtn" hidden></button>
       <button type="button" class="primary" id="download" disabled>Descargar PDF</button>
@@ -613,7 +684,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   </section>
 
   <section>
-    <div class="panel">
+    <div class="panel" id="pPins">
       <div class="toolbar">
         <h2>Tus pines</h2>
         <button type="button" id="clear" class="danger" hidden>Quitar todas</button>
@@ -622,7 +693,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       <div class="items" id="items"><div class="empty">Aún no hay imágenes.</div></div>
     </div>
 
-    <div class="panel">
+    <div class="panel" id="pPreview">
       <h2>Vista previa de las hojas</h2>
       <div class="pages" id="pages"><div class="empty">Aquí aparecerán las hojas.</div></div>
     </div>
@@ -630,9 +701,15 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
 </main>
 </div>
 
+<div class="mbar" id="mbar" hidden>
+  <span id="mbarStats"></span>
+  <button type="button" class="primary" id="mbarDownload">Descargar PDF</button>
+</div>
+
 <dialog id="editor">
+ <div class="ed-body">
   <h2>Acomodar pin</h2>
-  <p class="hint">Arrastra para mover · rueda o pellizco para cambiar tamaño. Lo que queda fuera del círculo se recorta.</p>
+  <p class="hint"><span class="mouse-only">Arrastra para mover · usa la rueda para cambiar tamaño.</span><span class="touch-only">Arrastra con un dedo para mover · pellizca con dos para cambiar tamaño.</span> Lo que queda fuera del círculo se recorta.</p>
   <canvas id="edCanvas" width="900" height="900"></canvas>
   <div class="legend">
     <span><i style="color:#d23f66"></i>Corte</span>
@@ -692,6 +769,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       </div>
     </div>
   </details>
+ </div>
 
   <div class="ed-foot">
     <button type="button" data-act="reset">Empezar de nuevo</button>
@@ -926,8 +1004,16 @@ const store = (() => {
     tx.onerror = () => rej(tx.error);
   })).catch(() => undefined);
   return {
-    putImage: (id, blob) => run('images', 'readwrite', s => s.put(blob, id)),
-    getImage: (id) => run('images', 'readonly', s => s.get(id)),
+    // Se guardan los bytes y no el Blob: Safari falla al guardar Blobs en algunos modos (privado, iframes).
+    putImage: async (id, blob) => {
+      const rec = { type: blob.type, bytes: await blob.arrayBuffer() };
+      return run('images', 'readwrite', s => s.put(rec, id));
+    },
+    getImage: async (id) => {
+      const rec = await run('images', 'readonly', s => s.get(id));
+      if (!rec || rec instanceof Blob) return rec;
+      return new Blob([rec.bytes], { type: rec.type });
+    },
     deleteImage: (id) => run('images', 'readwrite', s => s.delete(id)),
     clearImages: () => run('images', 'readwrite', s => s.clear()),
     putState: (state) => run('state', 'readwrite', s => s.put(state, 'current')),
@@ -993,11 +1079,29 @@ async function addImage(blob, name, meta = {}) {
   return it;
 }
 
+// 3000 px por lado alcanza para imprimir a 300 dpi aun acercando la imagen ~4×.
+const MAX_SIDE = 3000;
+async function shrink(file) {
+  const img = await loadImage(file);
+  const w = img.naturalWidth, h = img.naturalHeight, k = MAX_SIDE / Math.max(w, h);
+  URL.revokeObjectURL(img.src);
+  if (k >= 1) return file;
+  const c = document.createElement('canvas');
+  c.width = Math.round(w * k); c.height = Math.round(h * k);
+  const ctx = c.getContext('2d');
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(img, 0, 0, c.width, c.height);
+  const out = await new Promise(r => c.toBlob(r, file.type === 'image/png' ? 'image/png' : 'image/jpeg', 0.92));
+  c.width = c.height = 0;   // libera la memoria del lienzo (importante en iPhone)
+  return out || file;
+}
+
 async function addFiles(fileList) {
   const files = [...fileList].filter(f => f && f.type.startsWith('image/'));
   const failed = [];
+  if (files.length > 1) toast(`Cargando ${files.length} imágenes…`);
   for (const f of files) {
-    try { await addImage(f, f.name || 'imagen'); } catch (e) { failed.push(f.name || 'imagen'); }
+    try { await addImage(await shrink(f), f.name || 'imagen'); } catch (e) { failed.push(f.name || 'imagen'); }
   }
   if (failed.length) toast('No se pudieron abrir: ' + failed.join(', '));
   renderItems();
@@ -1137,6 +1241,7 @@ function edChanged() {
 function openEditor(it) {
   edItem = it;
   edBackup = { zoom: it.zoom, ox: it.ox, oy: it.oy, bg: it.bg, text: structuredClone(it.text) };
+  document.documentElement.classList.add('modal-open');
   openEditorFields(it);
   $('textBox').open = !!textValue(it.text);
   drawEditor();
@@ -1149,6 +1254,7 @@ function closeEditor(keep) {
   editor.close();
 }
 editor.addEventListener('close', () => {
+  document.documentElement.classList.remove('modal-open');
   if (edBackup) Object.assign(edItem, edBackup);
   edBackup = null;
   renderThumb(edItem.thumb, edItem); refresh();
@@ -1203,7 +1309,7 @@ const pointers = new Map();
 let gesture = null;
 const pinchDist = () => { const [a, b] = [...pointers.values()]; return Math.hypot(b.x - a.x, b.y - a.y); };
 edCanvas.addEventListener('pointerdown', e => {
-  edCanvas.setPointerCapture(e.pointerId);
+  try { edCanvas.setPointerCapture(e.pointerId); } catch { /* sin captura, el arrastre igual funciona */ }
   pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
   if (pointers.size === 2) gesture = { dist: pinchDist(), zoom: edItem.zoom };
 });
@@ -1234,6 +1340,8 @@ function refresh() {
   scheduleSave();
 }
 
+const PAPER_NAMES = { carta: 'Carta', oficio: 'Oficio', legal: 'Legal', a4: 'A4' };
+
 function renderPreview() {
   const s = settings();
   const L = layout(s);
@@ -1241,6 +1349,8 @@ function renderPreview() {
   const warn = $('warn'), pagesBox = $('pages'), stats = $('stats'), fillBtn = $('fillBtn');
   pagesBox.innerHTML = '';
   fillBtn.hidden = true;
+  $('sheetSummary').textContent = `${PAPER_NAMES[$('paper').value]} · ${s.d} mm` + (L ? ` · ${L.spots.length} por hoja` : '');
+  $('mbar').hidden = true;
 
   if (!L) {
     warn.hidden = false;
@@ -1268,6 +1378,8 @@ function renderPreview() {
     fillBtn.dataset.free = free;
   }
   $('download').disabled = false;
+  $('mbar').hidden = false;
+  $('mbarStats').innerHTML = `<b>${all.length}</b> pines · <b>${nPages}</b> hoja${nPages > 1 ? 's' : ''}`;
 
   const k = PREVIEW_PX_PER_MM;
   for (let p = 0; p < nPages; p++) {
@@ -1423,6 +1535,7 @@ async function buildPdf(onProgress = () => {}) {
         ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, px, px);
         drawPin(ctx, it, px / 2, px / 2, px);
         cache.set(it.id, c.toDataURL('image/jpeg', 0.95));
+        c.width = c.height = 0;
       }
       doc.addImage(cache.get(it.id), 'JPEG', spot.x, spot.y, s.d, s.d, 'pin' + it.id, 'NONE');
       if (s.outline) {
@@ -1434,27 +1547,34 @@ async function buildPdf(onProgress = () => {}) {
   return doc;
 }
 
+// Los dos botones de descarga (panel y barra del celular) muestran el mismo estado.
+function setDownloadState(text, busy) {
+  for (const id of ['download', 'mbarDownload']) { $(id).textContent = text; $(id).disabled = busy; }
+}
+
 $('download').addEventListener('click', async () => {
   if (!window.jspdf) {
     toast('No se pudo cargar el generador de PDF. Revisa tu conexión a internet y recarga la página.');
     return;
   }
-  const btn = $('download');
-  btn.disabled = true;
+  setDownloadState('Preparando…', true);
   try {
-    const doc = await buildPdf(msg => { btn.textContent = msg; });
+    const doc = await buildPdf(msg => setDownloadState(msg, true));
     if (!doc) return;
-    btn.textContent = 'Guardando PDF…';
+    setDownloadState('Guardando PDF…', true);
     await tick();
     if (await saveFile(`pines-${today()}.pdf`, doc.output('blob'))) toast('PDF listo.');
   } catch (e) {
     console.error(e);
     toast('Algo falló al crear el PDF: ' + e.message);
   } finally {
-    btn.textContent = 'Descargar PDF';
-    btn.disabled = false;
+    setDownloadState('Descargar PDF', false);
   }
 });
+$('mbarDownload').addEventListener('click', () => $('download').click());
+
+// En el celular la sección “Hoja” empieza cerrada: casi nunca se cambia.
+if (matchMedia('(max-width: 900px)').matches) $('pSheet').open = false;
 
 renderPreview();
 restore();

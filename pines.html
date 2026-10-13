@@ -125,8 +125,10 @@
   input[type=color] { width: 36px; height: 30px; padding: 0 2px; border: 1px solid var(--line); border-radius: 8px; background: var(--field); }
   details.text { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 10px; }
   details.text summary { cursor: pointer; font: 600 15px var(--font-display); }
-  .text-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; margin-top: 10px; }
-  .text-grid .full { grid-column: 1 / -1; }
+  .text-line { margin-top: 12px; }
+  .text-line h3 { margin: 0 0 6px; font: 600 13px/1.2 var(--font-body); color: var(--muted); letter-spacing: .03em; text-transform: uppercase; }
+  .text-grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 8px; }
+  .text-grid input, .text-grid select { width: 100%; padding: 7px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--field); }
   .ed-foot { display: flex; justify-content: space-between; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
   .ed-foot span { display: flex; gap: 8px; }
   .ed-foot .primary { width: auto; padding: 9px 22px; font-size: 15px; }
@@ -242,10 +244,32 @@
 
   <details class="text" id="textBox">
     <summary>Texto</summary>
-    <div class="text-grid">
-      <label class="full">Escribe el texto
-        <input type="text" id="edText" maxlength="60" placeholder="Por ejemplo: tu nombre">
-      </label>
+    <div class="text-line" data-line="0">
+      <h3>Arriba</h3>
+      <div class="text-grid">
+        <input type="text" id="edText0" maxlength="60" placeholder="Texto de arriba" aria-label="Texto de arriba">
+        <select id="edMode0" aria-label="Forma del texto de arriba">
+          <option value="top">Curva arriba</option>
+          <option value="bottom">Curva abajo</option>
+          <option value="straight">Recta</option>
+        </select>
+      </div>
+      <div class="ctl"><span>Posición</span><input type="range" id="edPos0" min="0" max="1" step="0.005"><output id="edPosOut0"></output></div>
+    </div>
+    <div class="text-line" data-line="1">
+      <h3>Abajo</h3>
+      <div class="text-grid">
+        <input type="text" id="edText1" maxlength="60" placeholder="Texto de abajo" aria-label="Texto de abajo">
+        <select id="edMode1" aria-label="Forma del texto de abajo">
+          <option value="top">Curva arriba</option>
+          <option value="bottom">Curva abajo</option>
+          <option value="straight">Recta</option>
+        </select>
+      </div>
+      <div class="ctl"><span>Posición</span><input type="range" id="edPos1" min="0" max="1" step="0.005"><output id="edPosOut1"></output></div>
+    </div>
+    <div class="text-line">
+      <h3>Estilo de las dos líneas</h3>
       <label>Letra
         <select id="edFont">
           <option value="Fredoka">Redondita</option>
@@ -256,20 +280,12 @@
           <option value="Permanent Marker">Plumón</option>
         </select>
       </label>
-      <label>Forma
-        <select id="edMode">
-          <option value="top">Curva arriba</option>
-          <option value="bottom">Curva abajo</option>
-          <option value="straight">Recta</option>
-        </select>
-      </label>
-    </div>
-    <div class="ctl"><span>Tamaño</span><input type="range" id="edTSize" min="0.04" max="0.3" step="0.005"><output id="edTSizeOut"></output></div>
-    <div class="ctl"><span>Posición</span><input type="range" id="edTPos" min="0" max="1" step="0.005"><output id="edTPosOut"></output></div>
-    <div class="btns">
-      <label>Color <input type="color" id="edTColor"></label>
-      <label><input type="checkbox" id="edTStroke"> Contorno</label>
-      <input type="color" id="edTStrokeColor" aria-label="Color del contorno">
+      <div class="ctl"><span>Tamaño</span><input type="range" id="edTSize" min="0.04" max="0.3" step="0.005"><output id="edTSizeOut"></output></div>
+      <div class="btns">
+        <label>Color <input type="color" id="edTColor"></label>
+        <label><input type="checkbox" id="edTStroke"> Contorno</label>
+        <input type="color" id="edTStrokeColor" aria-label="Color del contorno">
+      </div>
     </div>
   </details>
 
@@ -300,10 +316,28 @@ const $ = (id) => document.getElementById(id);
 let items = [];
 let nextId = 1;
 
+// Texto estilo meme: una línea arriba y otra abajo, con el mismo estilo de letra.
 function newText() {
-  return { value: '', font: 'Fredoka', mode: 'top', size: 0.11, y: 0.3, r: 0.33,
-           color: '#ffffff', stroke: true, strokeColor: '#2b2420' };
+  return {
+    font: 'Fredoka', size: 0.11, color: '#ffffff', stroke: true, strokeColor: '#2b2420',
+    lines: [
+      { value: '', mode: 'top', y: -0.3, r: 0.33 },
+      { value: '', mode: 'bottom', y: 0.3, r: 0.33 },
+    ],
+  };
 }
+
+// Acepta el formato viejo de una sola línea (guardados y proyectos anteriores).
+function normText(t) {
+  const base = newText();
+  if (!t) return base;
+  const { value, mode, y, r, lines, ...style } = t;
+  const out = { ...base, ...style, lines: base.lines.map((l, i) => ({ ...l, ...(lines?.[i] || {}) })) };
+  if (!lines && value) out.lines[0] = { value, mode: mode || 'top', y: y ?? -0.3, r: r ?? 0.33 };
+  return out;
+}
+
+const textValue = t => (t?.lines || []).map(l => l.value.trim()).join(' ').trim();
 
 // ---------- Avisos ----------
 let toastTimer = 0;
@@ -389,8 +423,7 @@ const fontCss = (t, px) => `${FONT_WEIGHTS[t.font] || 400} ${px}px "${t.font}", 
 // Texto recto o en curva. Tamaño y posición son fracciones del diámetro,
 // así se ve igual en la miniatura, la vista previa y el PDF.
 function drawText(ctx, t, cx, cy, d) {
-  const value = (t?.value || '').trim();
-  if (!value) return;
+  if (!textValue(t)) return;
   const px = t.size * d;
   ctx.save();
   ctx.font = fontCss(t, px);
@@ -401,22 +434,7 @@ function drawText(ctx, t, cx, cy, d) {
   ctx.fillStyle = t.color;
   ctx.strokeStyle = t.strokeColor;
 
-  let glyphs;   // [{ch, x, y, a}]
-  if (t.mode === 'straight') {
-    glyphs = [{ ch: value, x: cx, y: cy + t.y * d, a: 0 }];
-  } else {
-    const r = t.r * d, top = t.mode === 'top';
-    const chars = [...value];
-    const widths = chars.map(ch => ctx.measureText(ch).width + px * 0.03);
-    const total = widths.reduce((a, b) => a + b, 0);
-    let acc = 0;
-    glyphs = chars.map((ch, i) => {
-      const off = (acc + widths[i] / 2 - total / 2) / r;
-      acc += widths[i];
-      const a = top ? -Math.PI / 2 + off : Math.PI / 2 - off;
-      return { ch, x: cx + r * Math.cos(a), y: cy + r * Math.sin(a), a: top ? a + Math.PI / 2 : a - Math.PI / 2 };
-    });
-  }
+  const glyphs = t.lines.flatMap(line => lineGlyphs(ctx, line, px, cx, cy, d));
   // Primero todos los contornos y luego todos los rellenos, para que no se encimen.
   for (const pass of t.stroke ? ['stroke', 'fill'] : ['fill']) {
     for (const g of glyphs) {
@@ -460,10 +478,29 @@ function strokeCircle(ctx, cx, cy, r, color, width, dash) {
   ctx.restore();
 }
 
+// Posiciones de cada letra de una línea: [{ch, x, y, a}].
+function lineGlyphs(ctx, line, px, cx, cy, d) {
+  const value = line.value.trim();
+  if (!value) return [];
+  if (line.mode === 'straight') return [{ ch: value, x: cx, y: cy + line.y * d, a: 0 }];
+  const r = line.r * d, top = line.mode === 'top';
+  const chars = [...value];
+  const widths = chars.map(ch => ctx.measureText(ch).width + px * 0.03);
+  const total = widths.reduce((a, b) => a + b, 0);
+  let acc = 0;
+  return chars.map((ch, i) => {
+    const off = (acc + widths[i] / 2 - total / 2) / r;
+    acc += widths[i];
+    const a = top ? -Math.PI / 2 + off : Math.PI / 2 - off;
+    return { ch, x: cx + r * Math.cos(a), y: cy + r * Math.sin(a), a: top ? a + Math.PI / 2 : a - Math.PI / 2 };
+  });
+}
+
 // Las fuentes de Google llegan después; el lienzo necesita tenerlas antes de dibujar.
 function ensureFont(t) {
-  if (!t?.value?.trim() || !document.fonts?.load) return Promise.resolve();
-  return document.fonts.load(fontCss(t, 40), t.value).catch(() => {});
+  const value = textValue(t);
+  if (!value || !document.fonts?.load) return Promise.resolve();
+  return document.fonts.load(fontCss(t, 40), value).catch(() => {});
 }
 
 // ---------- Guardado automático en este navegador ----------
@@ -514,7 +551,7 @@ async function restore() {
     if (!blob) { lost++; continue; }
     try {
       const img = await loadImage(blob);
-      items.push({ ...meta, text: { ...newText(), ...meta.text }, img, blob });
+      items.push({ ...meta, text: normText(meta.text), img, blob });
     } catch { lost++; }
   }
   nextId = items.reduce((m, it) => Math.max(m, it.id + 1), nextId);
@@ -541,7 +578,7 @@ function loadImage(blob) {
 async function addImage(blob, name, meta = {}) {
   const img = await loadImage(blob);
   const it = { zoom: 1, ox: 0, oy: 0, bg: '#ffffff', qty: 1, ...meta,
-               text: { ...newText(), ...meta.text }, id: nextId++, name, img, blob };
+               text: normText(meta.text), id: nextId++, name, img, blob };
   items.push(it);
   store.putImage(it.id, blob);
   await ensureFont(it.text);
@@ -675,8 +712,10 @@ function drawEditor() {
   const t = it.text;
   $('edTSize').value = t.size;
   $('edTSizeOut').textContent = Math.round(t.size * settings().d) + ' mm';
-  $('edTPos').value = posToSlider(t);
-  $('edTPosOut').textContent = Math.round(posToSlider(t) * 100) + '%';
+  t.lines.forEach((line, i) => {
+    $('edPos' + i).value = posToSlider(line);
+    $('edPosOut' + i).textContent = Math.round(posToSlider(line) * 100) + '%';
+  });
 }
 
 function edChanged() {
@@ -688,9 +727,9 @@ function edChanged() {
 
 function openEditor(it) {
   edItem = it;
-  edBackup = { zoom: it.zoom, ox: it.ox, oy: it.oy, bg: it.bg, text: { ...it.text } };
+  edBackup = { zoom: it.zoom, ox: it.ox, oy: it.oy, bg: it.bg, text: structuredClone(it.text) };
   openEditorFields(it);
-  $('textBox').open = !!it.text.value;
+  $('textBox').open = !!textValue(it.text);
   drawEditor();
   editor.showModal();
 }
@@ -710,11 +749,13 @@ $('edZoom').addEventListener('input', e => { edItem.zoom = sliderToZoom(parseFlo
 $('edBg').addEventListener('input', e => { edItem.bg = e.target.value; edChanged(); });
 
 function textChanged() { ensureFont(edItem.text).then(edChanged); edChanged(); }
-$('edText').addEventListener('input', e => { edItem.text.value = e.target.value; textChanged(); });
+[0, 1].forEach(i => {
+  $('edText' + i).addEventListener('input', e => { edItem.text.lines[i].value = e.target.value; textChanged(); });
+  $('edMode' + i).addEventListener('change', e => { edItem.text.lines[i].mode = e.target.value; edChanged(); });
+  $('edPos' + i).addEventListener('input', e => { sliderToPos(edItem.text.lines[i], parseFloat(e.target.value)); edChanged(); });
+});
 $('edFont').addEventListener('change', e => { edItem.text.font = e.target.value; textChanged(); });
-$('edMode').addEventListener('change', e => { edItem.text.mode = e.target.value; edChanged(); });
 $('edTSize').addEventListener('input', e => { edItem.text.size = parseFloat(e.target.value); edChanged(); });
-$('edTPos').addEventListener('input', e => { sliderToPos(edItem.text, parseFloat(e.target.value)); edChanged(); });
 $('edTColor').addEventListener('input', e => { edItem.text.color = e.target.value; edChanged(); });
 $('edTStroke').addEventListener('change', e => { edItem.text.stroke = e.target.checked; edChanged(); });
 $('edTStrokeColor').addEventListener('input', e => { edItem.text.strokeColor = e.target.value; edChanged(); });
@@ -737,7 +778,8 @@ editor.querySelectorAll('[data-act]').forEach(b => b.addEventListener('click', (
 
 function openEditorFields(it) {
   const t = it.text;
-  $('edText').value = t.value; $('edFont').value = t.font; $('edMode').value = t.mode;
+  t.lines.forEach((line, i) => { $('edText' + i).value = line.value; $('edMode' + i).value = line.mode; });
+  $('edFont').value = t.font;
   $('edTColor').value = t.color; $('edTStroke').checked = t.stroke; $('edTStrokeColor').value = t.strokeColor;
 }
 

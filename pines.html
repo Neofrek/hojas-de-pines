@@ -531,6 +531,9 @@ const store = (() => {
   };
 })();
 
+const MAX_COPIES = 99;
+const clampQty = n => Math.max(1, Math.min(MAX_COPIES, parseInt(n, 10) || 1));
+
 const itemMeta = it => ({ id: it.id, name: it.name, zoom: it.zoom, ox: it.ox, oy: it.oy, bg: it.bg, qty: it.qty, text: it.text });
 
 let saveTimer = 0;
@@ -551,7 +554,7 @@ async function restore() {
     if (!blob) { lost++; continue; }
     try {
       const img = await loadImage(blob);
-      items.push({ ...meta, text: normText(meta.text), img, blob });
+      items.push({ ...meta, qty: clampQty(meta.qty), text: normText(meta.text), img, blob });
     } catch { lost++; }
   }
   nextId = items.reduce((m, it) => Math.max(m, it.id + 1), nextId);
@@ -579,6 +582,7 @@ async function addImage(blob, name, meta = {}) {
   const img = await loadImage(blob);
   const it = { zoom: 1, ox: 0, oy: 0, bg: '#ffffff', qty: 1, ...meta,
                text: normText(meta.text), id: nextId++, name, img, blob };
+  it.qty = clampQty(it.qty);
   items.push(it);
   store.putImage(it.id, blob);
   await ensureFont(it.text);
@@ -633,7 +637,7 @@ function renderItems() {
       <div class="name"></div>
       <button type="button" class="edit">Acomodar</button>
       <div class="row">
-        <label>Copias <input type="number" min="1" max="999" step="1" id="qty-${it.id}"></label>
+        <label>Copias <input type="number" min="1" max="99" step="1" id="qty-${it.id}"></label>
         <button type="button" class="remove" title="Quitar" aria-label="Quitar">✕</button>
       </div>`;
     const canvas = card.querySelector('canvas');
@@ -646,8 +650,9 @@ function renderItems() {
     card.querySelector('.edit').addEventListener('click', () => openEditor(it));
 
     qty.addEventListener('input', () => {
-      it.qty = Math.max(1, Math.min(999, parseInt(qty.value, 10) || 1)); refresh();
+      it.qty = clampQty(qty.value); refresh();
     });
+    qty.addEventListener('change', () => { qty.value = it.qty; });
     card.querySelector('.remove').addEventListener('click', () => {
       URL.revokeObjectURL(it.img.src);
       store.deleteImage(it.id);
@@ -883,7 +888,11 @@ function renderPreview() {
 // Reparte los lugares libres entre los pines, uno a uno y en orden.
 $('fillBtn').addEventListener('click', () => {
   let free = parseInt($('fillBtn').dataset.free, 10) || 0;
-  for (let i = 0; free > 0 && items.length; i++, free--) items[i % items.length].qty++;
+  // Si todos llegaron al máximo de copias, se detiene aunque queden lugares.
+  for (let i = 0; free > 0 && items.some(it => it.qty < MAX_COPIES); i++) {
+    const it = items[i % items.length];
+    if (it.qty < MAX_COPIES) { it.qty++; free--; }
+  }
   renderItems(); refresh();
   toast('Listo: la última hoja ya está completa.');
 });
